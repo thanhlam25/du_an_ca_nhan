@@ -24,6 +24,7 @@ function App() {
     { path: '/homeAdmin/userList', element: <UserList /> },
     { path: '/homeAdmin/userEdit', element: <UserEdit /> },
     { path: '/homeAdmin/productList', element: <ProductList /> },
+    { path: '/register', element: <Register /> },
 
 
 

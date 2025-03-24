@@ -7,4 +7,9 @@ export default defineConfig({
   optimizeDeps: {
     include: ['swiper'],  // Đảm bảo rằng Swiper được tối ưu hóa
   },
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3000', // Chuyển tiếp yêu cầu /api tới backend
+    },
+  },
 })

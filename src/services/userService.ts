@@ -8,3 +8,7 @@ export const login = async (data: Login) => {
     const res = await axiosInstance.post("/api/auth/login", data);
     return res.data;
 };
+export const register = async (formData: FormData) => {
+    const response = await axiosInstance.post("/api/auth/register", formData);
+    return response.data;
+};

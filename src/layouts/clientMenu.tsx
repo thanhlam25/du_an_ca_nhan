@@ -25,7 +25,7 @@ const MenuClient = () => {
                 updatedAt: ""
             },
             {
-                _id: "3", name: "Trẻ Trâu",
+                _id: "3", name: "Trẻ em",
                 parentId: null,
                 ancestors: [],
                 level: 0,
