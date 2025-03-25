@@ -22,3 +22,6 @@ export interface RegisterForm {
 }
 
 export type Register = Omit<RegisterForm, 'id'>;
+export type UserId = Pick<RegisterForm, '_id'>;
+
+

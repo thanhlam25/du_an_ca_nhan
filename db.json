@@ -23,5 +23,67 @@
       "phone": "09898989898",
       "id": 1
     }
+  ],
+  "order": [
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "XL",
+      "quantity": 2,
+      "id": 1
+    },
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "XL",
+      "quantity": 2,
+      "id": 2
+    },
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "XXL",
+      "quantity": 3,
+      "id": 3
+    },
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "XXL",
+      "quantity": 2,
+      "id": 4
+    },
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "XXL",
+      "quantity": 2,
+      "id": 5
+    },
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "XXL",
+      "quantity": 3,
+      "id": 6
+    },
+    {
+      "productId": "67db70a6ce20af8154852840",
+      "size": "S",
+      "quantity": 5,
+      "id": 7
+    },
+    {
+      "_id": "67db70a6ce20af8154852840",
+      "size": "L",
+      "quantity": 7,
+      "id": 8
+    },
+    {
+      "_id": "67db75cf6b5c539f80f198f4",
+      "size": "XXL",
+      "quantity": 5,
+      "id": 9
+    },
+    {
+      "_id": "67db75cf6b5c539f80f198f4",
+      "size": "XXL",
+      "quantity": 2,
+      "id": 10
+    }
   ]
 }

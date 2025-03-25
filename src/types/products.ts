@@ -1,4 +1,7 @@
+import { ReactNode } from "react";
+
 export interface IProduct {
+    sku: ReactNode;
     _id: string;
     name: string;
     price: number;
@@ -29,4 +32,9 @@ export interface ISize {
     size: string;
     stock: number;
     _id: string;
+}
+export interface Order{
+    _id:string|number,
+    size:string,
+    quantity:number,
 }

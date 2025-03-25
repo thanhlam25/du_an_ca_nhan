@@ -1,6 +1,6 @@
 import React from 'react';
 import './App.css'
-import { Route, Routes, useRoutes } from 'react-router-dom';
+import { Route, Routes, useParams, useRoutes } from 'react-router-dom';
 import Home from './pages/client/home';
 import Login from './pages/auth/login';
 import Register from './pages/auth/register';
@@ -11,7 +11,14 @@ import HomeAdmin from './pages/admin/HomeAdmin';
 import UserList from './pages/admin/UserList';
 import ProductList from './pages/admin/ProductList';
 import UserEdit from './pages/admin/UserEdit';
-
+import DetailProduct from './pages/client/detailProduct'
+const DetailProductWrapper = () => {
+  const { id } = useParams();
+  if (!id) {
+    return <div>Product ID không hợp lệ</div>;
+  }
+  return <DetailProduct productId={id} />;
+};
 function App() {
   const routes = useRoutes([
     { path: '/', element: <Home /> },
@@ -24,6 +31,7 @@ function App() {
     { path: '/homeAdmin/userList', element: <UserList /> },
     { path: '/homeAdmin/userEdit', element: <UserEdit /> },
     { path: '/homeAdmin/productList', element: <ProductList /> },
+    { path: '/products/products/:id', element: <DetailProductWrapper /> },
     { path: '/register', element: <Register /> },
 
 

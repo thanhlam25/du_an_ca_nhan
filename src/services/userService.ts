@@ -12,3 +12,10 @@ export const register = async (formData: FormData) => {
     const response = await axiosInstance.post("/api/auth/register", formData);
     return response.data;
 };
+
+
+export const getUser = async ()=>{
+    const userId = localStorage.getItem('id') || 1;
+    const res = await axios.get(`http://localhost:3000/users/${userId}`);
+    return res.data;
+}

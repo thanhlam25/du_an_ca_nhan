@@ -43,7 +43,9 @@ const Register = () => {
     interface ErrorResponse {
         errors?: string[];
     }
-
+    const getUser = async ()=>{
+        const res = await axios.get(`http://localhost:3000/users`)
+    }
     useEffect(() => {
         const fetchData = async () => {
             try {
