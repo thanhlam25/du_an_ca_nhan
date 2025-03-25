@@ -1,21 +1,25 @@
 import axios from "axios";
-import { Login } from "../types/users";
+import { Login, RegisterForm } from "../types/users";
 import axiosInstance from "./axiosInstance";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const login = async (data: Login) => {
-    const res = await axiosInstance.post("/api/auth/login", data);
+    const res = await axiosInstance.post("/auth/login", data);
     return res.data;
 };
-export const register = async (formData: FormData) => {
-    const response = await axiosInstance.post("/api/auth/register", formData);
+export const logout = async () => {
+    const res = await axiosInstance.post("/auth/logout");
+    return res.data;
+};
+export const info = async () => {
+    const res = await axiosInstance.post("/auth/info");
+    return res.data;
+};
+export const register = async (userData: RegisterForm): Promise<RegisterForm> => {
+    const response = await axiosInstance.post("/auth/register", userData, {
+      headers: { "Content-Type": "application/json" },
+    });
     return response.data;
-};
+  };
 
-
-export const getUser = async ()=>{
-    const userId = localStorage.getItem('id') || 1;
-    const res = await axios.get(`http://localhost:3000/users/${userId}`);
-    return res.data;
-}

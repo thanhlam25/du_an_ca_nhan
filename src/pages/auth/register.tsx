@@ -8,44 +8,66 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { RegisterForm } from "../../types/users";
 import { register } from "../../services/userService";
+import { toast } from "react-toastify";
+import { z } from "zod";
 
-const validateEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+// Schema xác thực với Zod
+const registerSchema = z.object({
+    first_name: z.string().min(1, "Tên không hợp lệ"),
+    name: z.string().min(2, "Tên cần tối thiểu 2 ký tự"),
+    email: z.string().email("Sai định dạng email"),
+    phone: z.string().regex(/^(0|\+84)(3[2-9]|5[2689]|7[06-9]|8[1-689]|9[0-46-9])\d{7}$/, "Sai định dạng số điện thoại Việt Nam"),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Ngày sinh phải đúng định dạng YYYY-MM-DD" }),
+    sex: z.string().regex(/^[01]$/, "Giới tính phải là 0 hoặc 1"),
+    city: z.string().min(1, "Cần chọn thành phố"),
+    district: z.string().min(1, "Cần chọn quận/huyện"),
+    commune: z.string().min(1, "Cần chọn phường/xã"),
+    address: z.string().min(2, "Địa chỉ tối thiểu 2 ký tự"),
+    password: z.string().min(6, "Mật khẩu tối thiểu 6 ký tự"),
+    confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu không khớp",
+    path: ["confirmPassword"],
+});
 
-const validatePhone = (phone: string) => {
-    return /^(0[2-9])+([0-9]{8})$/.test(phone);
-};
+type RegisterFormData = z.infer<typeof registerSchema>;
+
+interface ErrorResponse {
+    errors?: string[];
+}
 
 const Register = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const [firstName, setFirstName] = useState<string>("");
-    const [name, setName] = useState<string>("");
-    const [nameError, setNameError] = useState<string | null>(null);
-    const [email, setEmail] = useState<string>("");
-    const [phone, setPhone] = useState<string>("");
-    const [emailError, setEmailError] = useState<string | null>(null);
-    const [phoneError, setPhoneError] = useState<string | null>(null);
-    const [sex, setSex] = useState<string>("1"); // Đồng bộ với BE: 0: Nữ, 1: Nam
-    const [date, setDate] = useState<string>(""); // Ngày sinh
-    const [address, setAddress] = useState<string>("");
-    const [password, setPassword] = useState<string>("");
-    const [confirmPassword, setConfirmPassword] = useState<string>("");
-    const [passwordError, setPasswordError] = useState<string | null>(null);
-    const [cities, setCities] = useState<City[]>([]); // Sửa tên biến
-    const [districts, setDistricts] = useState<District[]>([]); // Sửa tên biến
-    const [wards, setWards] = useState<Ward[]>([]); // Sửa tên biến
+
+    // Trạng thái form
+    const [formData, setFormData] = useState<RegisterFormData>({
+        first_name: "",
+        name: "",
+        email: "",
+        phone: "",
+        date: "",
+        sex: "1",
+        city: "",
+        district: "",
+        commune: "",
+        address: "",
+        password: "",
+        confirmPassword: "",
+    });
+
+    // Trạng thái lỗi từ Zod
+    const [errors, setErrors] = useState<z.ZodError<RegisterFormData>["formErrors"] | null>(null);
+
+    // Trạng thái cho danh sách địa chỉ
+    const [cities, setCities] = useState<City[]>([]);
+    const [districts, setDistricts] = useState<District[]>([]);
+    const [wards, setWards] = useState<Ward[]>([]);
     const [selectedCity, setSelectedCity] = useState<string>("");
     const [selectedDistrict, setSelectedDistrict] = useState<string>("");
     const [selectedWard, setSelectedWard] = useState<string>("");
 
-    interface ErrorResponse {
-        errors?: string[];
-    }
-    const getUser = async ()=>{
-        const res = await axios.get(`http://localhost:3000/users`)
-    }
+    // Lấy danh sách tỉnh/thành phố
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -60,84 +82,34 @@ const Register = () => {
         fetchData();
     }, []);
 
-    const mutation = useMutation<RegisterForm, AxiosError<ErrorResponse>, FormData>({
+    // Mutation để gửi dữ liệu đăng ký
+    const mutation = useMutation<RegisterForm, AxiosError<ErrorResponse>, RegisterForm>({
         mutationFn: register,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["user"] });
+            toast.success("Đăng ký thành công");
             navigate("/login");
         },
         onError: (error) => {
             const errorData = error.response?.data;
             console.error("Lỗi từ server:", errorData);
             if (errorData?.errors) {
-                alert("Lỗi validation: " + errorData.errors.join(", "));
+                toast.error("Lỗi validation: " + errorData.errors.join(", "));
             } else {
-                alert("Có lỗi xảy ra khi đăng ký!");
+                toast.error("Có lỗi xảy ra khi đăng ký!");
             }
         },
     });
 
-    const handleFirstName = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setFirstName(e.target.value);
-        if (!e.target.value) setNameError("Vui lòng nhập họ!");
-        else if (e.target.value.length < 6) setNameError("Họ phải dài ít nhất 6 ký tự!");
-        else setNameError(null);
+    // Xử lý thay đổi input
+    const handleChange = (
+        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    ) => {
+        const { name, value } = e.target;
+        setFormData((prev) => ({ ...prev, [name]: value }));
     };
-
-    const handleName = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setName(e.target.value);
-        if (!e.target.value) setNameError("Vui lòng nhập tên!");
-        else setNameError(null);
-    };
-
-    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setEmail(e.target.value);
-        if (!validateEmail(e.target.value)) setEmailError("Email không hợp lệ!");
-        else setEmailError(null);
-    };
-
-    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setPhone(e.target.value);
-        if (!validatePhone(e.target.value)) setPhoneError("Số điện thoại không hợp lệ!");
-        else setPhoneError(null);
-    };
-
-    const handleSexChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setSex(e.target.value);
-    };
-
-    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setDate(e.target.value); // Sửa từ birthdate thành date
-    };
-
-    const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setPassword(value);
-        if (value.length < 6) {
-            setPasswordError("Mật khẩu phải có ít nhất 6 ký tự!");
-        } else if (confirmPassword && value !== confirmPassword) {
-            setPasswordError("Mật khẩu nhập lại không khớp!");
-        } else {
-            setPasswordError(null);
-        }
-    };
-
-    const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setConfirmPassword(value);
-        if (password && value !== password) {
-            setPasswordError("Mật khẩu nhập lại không khớp!");
-        } else {
-            setPasswordError(null);
-        }
-    };
-
-    const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setAddress(e.target.value);
-    };
-
-    const handleCityChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const cityId = event.target.value;
+    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const cityId = e.target.value;
         setSelectedCity(cityId);
         setSelectedDistrict("");
         setSelectedWard("");
@@ -145,287 +117,301 @@ const Register = () => {
         setWards([]);
         const selected = cities.find((city) => city.Id === cityId);
         if (selected) setDistricts(selected.Districts);
+        setFormData((prev) => ({
+            ...prev,
+            city: selected?.Name || "",
+            district: "",
+            commune: "",
+        }));
     };
-
-    const handleDistrictChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const districtId = event.target.value;
+    const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const districtId = e.target.value;
         setSelectedDistrict(districtId);
         setSelectedWard("");
         setWards([]);
         const selectedCityData = cities.find((city) => city.Id === selectedCity);
-        if (selectedCityData) {
-            const selectedDistrictData = selectedCityData.Districts.find(
-                (district) => district.Id === districtId
-            );
-            if (selectedDistrictData) setWards(selectedDistrictData.Wards);
-        }
+        const selectedDistrictData = selectedCityData?.Districts.find(
+            (district) => district.Id === districtId
+        );
+        if (selectedDistrictData) setWards(selectedDistrictData.Wards);
+        setFormData((prev) => ({
+            ...prev,
+            district: selectedDistrictData?.Name || "",
+            commune: "",
+        }));
     };
-
-    const handleWardChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setSelectedWard(event.target.value);
+    const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const wardId = e.target.value;
+        setSelectedWard(wardId);
+        const selectedWardData = wards.find((ward) => ward.Id === wardId);
+        setFormData((prev) => ({
+            ...prev,
+            commune: selectedWardData?.Name || "",
+        }));
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        setErrors(null);
 
-        let valid = true;
-
-        if (!firstName || !name) {
-            setNameError("Vui lòng nhập đầy đủ họ và tên!");
-            valid = false;
+        try {
+            const validatedData = registerSchema.parse(formData);
+            mutation.mutate({
+                ...validatedData,
+                sex: String(validatedData.sex),
+            });
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                setErrors(error.formErrors);
+            }
         }
-        if (firstName.length < 6) {
-            setNameError("Họ phải dài ít nhất 6 ký tự!");
-            valid = false;
-        }
-        if (!validateEmail(email)) {
-            setEmailError("Email không hợp lệ!");
-            valid = false;
-        }
-        if (!validatePhone(phone)) {
-            setPhoneError("Số điện thoại không hợp lệ!");
-            valid = false;
-        }
-        if (!date) {
-            alert("Vui lòng chọn ngày sinh!");
-            valid = false;
-        }
-        if (!selectedCity || !selectedDistrict || !selectedWard || !address) {
-            alert("Vui lòng nhập đầy đủ địa chỉ!");
-            valid = false;
-        }
-        if (!password || password.length < 6) {
-            setPasswordError("Mật khẩu phải có ít nhất 6 ký tự!");
-            valid = false;
-        }
-        if (password !== confirmPassword) {
-            setPasswordError("Mật khẩu nhập lại không khớp!");
-            valid = false;
-        }
-
-        if (!valid) return;
-
-        const formData = new FormData();
-        formData.append("first_name", firstName);
-        formData.append("name", name);
-        formData.append("email", email);
-        formData.append("phone", phone);
-        formData.append("date", date);
-        formData.append("sex", sex); // 0 hoặc 1 theo schema BE
-        formData.append("city", cities.find((c) => c.Id === selectedCity)?.Name || "");
-        formData.append("district", districts.find((d) => d.Id === selectedDistrict)?.Name || "");
-        formData.append("commune", wards.find((w) => w.Id === selectedWard)?.Name || "");
-        formData.append("address", address);
-        formData.append("password", password);
-
-        mutation.mutate(formData);
     };
 
     return (
         <>
             <HeaderClient />
-            <div className="mx-[5%]">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <MenuClient />
-                <article className="mt-[82px]">
+                <article className="mt-20">
                     <div className="flex justify-center">
-                        <p className="font-semibold text-2xl pt-4">ĐĂNG KÝ</p>
+                        <h1 className="text-2xl font-semibold pt-4">ĐĂNG KÝ</h1>
                     </div>
-                    <div className="grid grid-cols-2 gap-8">
-                        <div className="flex flex-col">
-                            <p className="font-[500] text-[1rem] py-4">Thông tin khách hàng</p>
-                            <form onSubmit={handleSubmit} id="registerForm" className="leading-[40px]">
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div>
-                                        <p>Họ: <span className="text-red-500">*</span></p>
-                                        <input
-                                            type="text"
-                                            placeholder="Họ.."
-                                            className="border w-full h-14 p-4"
-                                            value={firstName}
-                                            onChange={handleFirstName}
-                                            required
-                                        />
-                                        {nameError && <p className="text-red-500 text-sm">{nameError}</p>}
-                                    </div>
-                                    <div>
-                                        <p>Tên: <span className="text-red-500">*</span></p>
-                                        <input
-                                            type="text"
-                                            placeholder="Tên.."
-                                            className="border w-full h-14 p-4"
-                                            value={name}
-                                            onChange={handleName}
-                                            required
-                                        />
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div>
-                                        <p>Email: <span className="text-red-500">*</span></p>
-                                        <input
-                                            type="email"
-                                            placeholder="Email.."
-                                            className="border w-full h-14 p-4"
-                                            value={email}
-                                            onChange={handleEmailChange}
-                                            required
-                                        />
-                                        {emailError && <p className="text-red-500 text-sm">{emailError}</p>}
-                                    </div>
-                                    <div>
-                                        <p>Điện thoại: <span className="text-red-500">*</span></p>
-                                        <input
-                                            type="text"
-                                            placeholder="Điện thoại.."
-                                            className="border w-full h-14 p-4"
-                                            value={phone}
-                                            onChange={handlePhoneChange}
-                                            required
-                                        />
-                                        {phoneError && <p className="text-red-500 text-sm">{phoneError}</p>}
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div>
-                                        <p>Ngày sinh: <span className="text-red-500">*</span></p>
-                                        <input
-                                            type="date"
-                                            className="border w-full h-14 p-4"
-                                            value={date}
-                                            onChange={handleDateChange}
-                                            required
-                                        />
-                                    </div>
-                                    <div>
-                                        <p>Giới tính: <span className="text-red-500">*</span></p>
-                                        <select
-                                            className="border w-full h-14 p-4"
-                                            value={sex}
-                                            onChange={handleSexChange}
-                                        >
-                                            <option value="1">Nam</option>
-                                            <option value="0">Nữ</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-8">
-                                    <div>
-                                        <p>Tỉnh/TP: <span className="text-red-500">*</span></p>
-                                        <select
-                                            className="border w-full h-14 p-4"
-                                            value={selectedCity}
-                                            onChange={handleCityChange}
-                                            required
-                                        >
-                                            <option value="">Chọn tỉnh/thành phố</option>
-                                            {cities.map((city) => (
-                                                <option key={city.Id} value={city.Id}>
-                                                    {city.Name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <p>Quận/Huyện: <span className="text-red-500">*</span></p>
-                                        <select
-                                            className="border w-full h-14 p-4"
-                                            value={selectedDistrict}
-                                            onChange={handleDistrictChange}
-                                            disabled={!selectedCity}
-                                            required
-                                        >
-                                            <option value="">Chọn quận/huyện</option>
-                                            {districts.map((district) => (
-                                                <option key={district.Id} value={district.Id}>
-                                                    {district.Name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+                    <form onSubmit={handleSubmit} id="registerForm" className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+                        <div className="flex flex-col space-y-4">
+                            <h2 className="text-lg font-medium">Thông tin khách hàng</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Họ <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="first_name"
+                                        value={formData.first_name}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Họ.."
+                                        required
+                                    />
+                                    {errors?.fieldErrors?.first_name && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.first_name[0]}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <p>Phường/Xã: <span className="text-red-500">*</span></p>
+                                    <label className="block text-sm font-medium">Tên <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Tên.."
+                                        required
+                                    />
+                                    {errors?.fieldErrors?.name && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.name[0]}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Email <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Email.."
+                                        required
+                                    />
+                                    {errors?.fieldErrors?.email && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.email[0]}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium">Điện thoại <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="text"
+                                        name="phone"
+                                        value={formData.phone}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Điện thoại.."
+                                        required
+                                    />
+                                    {errors?.fieldErrors?.phone && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.phone[0]}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Ngày sinh <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="date"
+                                        name="date"
+                                        value={formData.date}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    />
+                                    {errors?.fieldErrors?.date && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.date[0]}</p>
+                                    )}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium">Giới tính <span className="text-red-500">*</span></label>
                                     <select
-                                        className="border w-full h-14 p-4"
-                                        value={selectedWard}
-                                        onChange={handleWardChange}
-                                        disabled={!selectedDistrict}
+                                        name="sex"
+                                        value={formData.sex}
+                                        onChange={handleChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <option value="1">Nam</option>
+                                        <option value="0">Nữ</option>
+                                    </select>
+                                    {errors?.fieldErrors?.sex && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.sex[0]}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium">Tỉnh/TP <span className="text-red-500">*</span></label>
+                                    <select
+                                        value={selectedCity}
+                                        onChange={handleCityChange}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         required
                                     >
-                                        <option value="">Chọn phường/xã</option>
-                                        {wards.map((ward) => (
-                                            <option key={ward.Id} value={ward.Id}>
-                                                {ward.Name}
+                                        <option value="">Chọn tỉnh/thành phố</option>
+                                        {cities.map((city) => (
+                                            <option key={city.Id} value={city.Id}>
+                                                {city.Name}
                                             </option>
                                         ))}
                                     </select>
+                                    {errors?.fieldErrors?.city && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.city[0]}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <p>Địa chỉ: <span className="text-red-500">*</span></p>
-                                    <input
-                                        type="text"
-                                        placeholder="Địa chỉ.."
-                                        className="border w-full h-14 p-4"
-                                        value={address}
-                                        onChange={handleAddressChange}
+                                    <label className="block text-sm font-medium">Quận/Huyện <span className="text-red-500">*</span></label>
+                                    <select
+                                        value={selectedDistrict}
+                                        onChange={handleDistrictChange}
+                                        disabled={!selectedCity}
+                                        className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                                         required
-                                    />
+                                    >
+                                        <option value="">Chọn quận/huyện</option>
+                                        {districts.map((district) => (
+                                            <option key={district.Id} value={district.Id}>
+                                                {district.Name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors?.fieldErrors?.district && (
+                                        <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.district[0]}</p>
+                                    )}
                                 </div>
-                            </form>
-                        </div>
-                        <div className="flex flex-col leading-[37px]">
-                            <p className="font-[500] text-[1rem] py-4">Thông tin mật khẩu</p>
-                            <div>
-                                <p>Mật khẩu: <span className="text-red-500">*</span></p>
-                                <input
-                                    type="password"
-                                    placeholder="Mật khẩu.."
-                                    className="border w-full h-14 p-4"
-                                    value={password}
-                                    onChange={handlePasswordChange}
-                                    required
-                                />
                             </div>
                             <div>
-                                <p>Nhập lại mật khẩu: <span className="text-red-500">*</span></p>
+                                <label className="block text-sm font-medium">Phường/Xã <span className="text-red-500">*</span></label>
+                                <select
+                                    value={selectedWard}
+                                    onChange={handleWardChange}
+                                    disabled={!selectedDistrict}
+                                    className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                                    required
+                                >
+                                    <option value="">Chọn phường/xã</option>
+                                    {wards.map((ward) => (
+                                        <option key={ward.Id} value={ward.Id}>
+                                            {ward.Name}
+                                        </option>
+                                    ))}
+                                </select>
+                                {errors?.fieldErrors?.commune && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.commune[0]}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium">Địa chỉ <span className="text-red-500">*</span></label>
                                 <input
-                                    type="password"
-                                    placeholder="Nhập lại mật khẩu.."
-                                    className="border w-full h-14 p-4"
-                                    value={confirmPassword}
-                                    onChange={handleConfirmPasswordChange}
+                                    type="text"
+                                    name="address"
+                                    value={formData.address}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Địa chỉ.."
                                     required
                                 />
-                                {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
+                                {errors?.fieldErrors?.address && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.address[0]}</p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex flex-col space-y-4">
+                            <h2 className="text-lg font-medium">Thông tin mật khẩu</h2>
+                            <div>
+                                <label className="block text-sm font-medium">Mật khẩu <span className="text-red-500">*</span></label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Mật khẩu.."
+                                    required
+                                />
+                                {errors?.fieldErrors?.password && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.password[0]}</p>
+                                )}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium">Nhập lại mật khẩu <span className="text-red-500">*</span></label>
+                                <input
+                                    type="password"
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    className="mt-1 block w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Nhập lại mật khẩu.."
+                                    required
+                                />
+                                {errors?.fieldErrors?.confirmPassword && (
+                                    <p className="text-red-500 text-sm mt-1">{errors.fieldErrors.confirmPassword[0]}</p>
+                                )}
                             </div>
                             <div className="flex items-center">
-                                <input type="checkbox" className="mr-2" />
-                                <p className="text-[14px]">
-                                    Đồng ý với các <a href="#" className="text-red-500">điều khoản</a> của IVY
+                                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-600" />
+                                <p className="text-sm">
+                                    Đồng ý với các <a href="#" className="text-red-500 hover:underline">điều khoản</a> của IVY
                                 </p>
                             </div>
-                            <div className="flex items-center mt-4">
-                                <input type="checkbox" className="mr-2" />
-                                <p className="text-[14px]">Đăng ký nhận bản tin</p>
+                            <div className="flex items-center">
+                                <input type="checkbox" className="mr-2 h-4 w-4 text-blue-600" />
+                                <p className="text-sm">Đăng ký nhận bản tin</p>
                             </div>
-                            <div className="mt-6">
+                            <div className="mt-6 space-y-4">
                                 <button
-                                    className="border border-black text-white font-semibold text-lg bg-black w-full p-3 rounded-br-2xl rounded-tl-2xl cursor-pointer hover:bg-white hover:text-black"
                                     type="submit"
-                                    form="registerForm"
                                     disabled={mutation.isPending}
+                                    className={`w-full py-3 px-4 bg-black text-white font-semibold text-lg rounded-br-2xl rounded-tl-2xl hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${mutation.isPending ? "opacity-50 cursor-not-allowed" : ""
+                                        }`}
                                 >
                                     {mutation.isPending ? "Đang đăng ký" : "Đăng ký"}
                                 </button>
                                 <button
+                                    type="button"
                                     onClick={() => navigate("/login")}
-                                    className="border border-black text-black font-semibold text-lg bg-white w-full p-3 mt-4 block text-center rounded-br-2xl rounded-tl-2xl hover:bg-black hover:text-white"
+                                    className="w-full py-3 px-4 bg-white text-black font-semibold text-lg border border-black rounded-br-2xl rounded-tl-2xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                 >
                                     Quay lại trang đăng nhập
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </form>
                 </article>
                 <Footer />
             </div>

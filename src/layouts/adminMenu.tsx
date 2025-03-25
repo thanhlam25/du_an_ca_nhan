@@ -1,37 +1,42 @@
-import React from 'react'
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 
-const adminMenu = () => {
-    return (
-        <>
-            <aside className="w-64 bg-gray-800 text-white flex flex-col fixed h-full top-0 left-0">
-                <div className="p-4 text-center text-lg font-bold border-b border-gray-700">
-                    Admin Panel
-                </div>
-                <nav className="flex-grow">
-                    <ul>
-                        <li className="px-4 py-2 hover:bg-gray-700">
-                            <a href="?action=thongke" className="block">Thống kê</a>
-                        </li>
-                        <li className="px-4 py-2 hover:bg-gray-700">
-                            <a href="?action=quan_ly_nguoi_dung" className="block">Quản lý người dùng</a>
-                        </li>
-                        <li className="px-4 py-2 hover:bg-gray-700">
-                            <a href="?action=quan_ly_danh_muc" className="block">Quản lý danh mục</a>
-                        </li>
-                        <li className="px-4 py-2 hover:bg-gray-700">
-                            <a href="?action=products" className="block">Quản lý sản phẩm</a>
-                        </li>
-                        <li className="px-4 py-2 hover:bg-gray-700">
-                            <a href="?action=orderadmin" className="block">Quản lý đơn hàng</a>
-                        </li>
-                    </ul>
-                </nav>
-                <div className="p-4 border-t border-gray-700 text-center">
-                    <a href="?action=logout" className="text-sm text-gray-400 hover:underline">Logout</a>
-                </div>
-            </aside>
-        </>
-    )
+// Định nghĩa interface cho props của AdminMenu
+interface AdminMenuProps {
+    className?: string; // Thêm prop className để nhận từ parent component
 }
 
-export default adminMenu
+const AdminMenu: React.FC<AdminMenuProps> = ({ className }) => {
+    const menuItems = [
+        { name: 'Dashboard', icon: 'fas fa-tachometer-alt', url: '/' },
+        { name: 'Doanh thu', icon: 'fas fa-chart-line', url: '/admin/revenue' },
+        { name: 'Thêm sản phẩm', icon: 'fas fa-plus', url: '/admin/add-product' },
+        { name: 'Sản phẩm', icon: 'fas fa-box', url: '/admin/products' },
+        { name: 'Danh mục', icon: 'fas fa-folder', url: '/admin/categories' },
+        { name: 'Người dùng', icon: 'fas fa-users', url: '/admin/users' },
+        { name: 'Cài đặt', icon: 'fas fa-cog', url: '/admin/settings' },
+    ];
+
+    return (
+        <aside className={`bg-[#000000] text-white w-64 h-full p-6 ${className || ''}`}>
+            <ul className="space-y-4">
+                {menuItems.map((item) => (
+                    <li key={item.name}>
+                        <NavLink
+                            to={item.url}
+                            className={({ isActive }) =>
+                                `flex items-center p-3 text-sm font-medium transition-colors duration-200 ${isActive ? 'bg-[#1A1A1A]' : 'hover:bg-[#1A1A1A]'
+                                }`
+                            }
+                        >
+                            <i className={`${item.icon} w-6 text-center`}></i>
+                            <span className="ml-4">{item.name}</span>
+                        </NavLink>
+                    </li>
+                ))}
+            </ul>
+        </aside>
+    );
+};
+
+export default AdminMenu;

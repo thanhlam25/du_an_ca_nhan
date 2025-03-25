@@ -1,15 +1,14 @@
-import { ReactNode } from "react";
-
 export interface IProduct {
-    sku: ReactNode;
     _id: string;
     name: string;
+    sku: string;
     price: number;
     categoryId: string;
     categoryAncestors: string[];
     colors: IColor[];
     images: IImages;
     sizes: ISize[];
+    shortDescription: string;
     description: string;
     createdAt: string;
     updatedAt: string;
@@ -19,7 +18,7 @@ export interface IColor {
     baseColor: string;
     actualColor: string;
     colorName: string;
-    _id: string;
+    _id?: string;
 }
 
 export interface IImages {
@@ -31,10 +30,5 @@ export interface IImages {
 export interface ISize {
     size: string;
     stock: number;
-    _id: string;
-}
-export interface Order{
-    _id:string|number,
-    size:string,
-    quantity:number,
+    _id?: string;
 }

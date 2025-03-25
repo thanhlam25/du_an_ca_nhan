@@ -1,27 +1,41 @@
+// login.tsx
 import React, { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { login } from "../../services/userService";
 import HeaderClient from "../../layouts/clientHeader";
 import MenuClient from "../../layouts/clientMenu";
-import Footer from "../../components/clientFooter";
+import Footer from "../../layouts/clientFooter";
 import { Login as LoginType } from "../../types/users";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../components/context/auth.context"; // Import useAuth
 
 const Login = () => {
     const [formData, setFormData] = useState<LoginType>({
         email: "",
         password: "",
     });
-
+    const { setAuth } = useAuth(); // Use the custom hook
     const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
     const { mutate, isPending, isSuccess } = useMutation({
         mutationFn: login,
-        onSuccess: () => {
+        onSuccess: (data) => {
+            const { token } = data.user;
+
+            localStorage.setItem("token", token);
+            setAuth({
+                isAuthenticated: true,
+                user: {
+                    id: data?.user?.id ?? "",
+                    email: data?.user?.email ?? "",
+                    role: data?.user?.role ?? "",
+
+                },
+            });
             toast.success("Đăng nhập thành công!", {
                 position: "top-right",
                 autoClose: 2000,
@@ -81,6 +95,7 @@ const Login = () => {
         }
     };
 
+    // JSX remains unchanged
     return (
         <>
             <HeaderClient />

@@ -84,6 +84,36 @@
       "size": "XXL",
       "quantity": 2,
       "id": 10
+    },
+    {
+      "productId": "67db75cf6b5c539f80f198f4",
+      "size": "XXL",
+      "quantity": 3,
+      "id": 11
+    },
+    {
+      "productId": "67db75cf6b5c539f80f198f4",
+      "size": "S",
+      "quantity": 1,
+      "id": 12
+    },
+    {
+      "productId": "67db75cf6b5c539f80f198f4",
+      "size": "M",
+      "quantity": 2,
+      "id": 13
+    },
+    {
+      "productId": "67db71abce20af815485288d",
+      "size": "M",
+      "quantity": 2,
+      "id": 14
+    },
+    {
+      "productId": "67db71abce20af815485288d",
+      "size": "XL",
+      "quantity": 1,
+      "id": 15
     }
   ]
 }
