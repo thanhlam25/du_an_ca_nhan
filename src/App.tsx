@@ -9,6 +9,8 @@ import Admin from './pages/admin/home';
 import AddProduct from './pages/admin/addProduct';
 import Categories from './pages/admin/Categories';
 import PrivateRoute from './components/PrivateRoute';
+import ListProduct from './pages/admin/listProduct';
+import EditProduct from './pages/admin/EditProduct';
 function App() {
 
   const DetailProductWrapper = () => {
@@ -27,6 +29,8 @@ function App() {
 
     { path: '/admin', element: <PrivateRoute element={<Admin />} /> },
     { path: '/admin/add-product', element: <PrivateRoute element={<AddProduct />} /> },
+    { path: '/admin/list-product', element: <PrivateRoute element={<ListProduct />} /> },
+    { path: '/admin/edit-product/:productId', element: <PrivateRoute element={<EditProduct />} /> },
     { path: '/admin/categories', element: <PrivateRoute element={<Categories />} /> },
   ])
   return routes

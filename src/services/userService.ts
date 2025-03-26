@@ -6,6 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export const login = async (data: Login) => {
     const res = await axiosInstance.post("/auth/login", data);
+    localStorage.setItem('accessToken', res.data.token);
     return res.data;
 };
 export const logout = async () => {

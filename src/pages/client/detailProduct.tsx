@@ -7,6 +7,8 @@ import Footer from '../../layouts/clientFooter';
 import { toast } from 'react-toastify';
 import { CartItem } from '../../types/orders';
 import { getById } from '../../api/provider';
+import axios from 'axios';
+import { useParams } from 'react-router-dom';
 
 const DetailProduct = ({ productId }: { productId: string }) => {
     const queryClient = useQueryClient();
@@ -20,6 +22,7 @@ const DetailProduct = ({ productId }: { productId: string }) => {
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
     const [quantity, setQuantity] = useState(1);
     const [activeTab, setActiveTab] = useState('gioi_thieu');
+    const {id} = useParams();
 
     useEffect(() => {
         if (product) {
@@ -41,6 +44,24 @@ const DetailProduct = ({ productId }: { productId: string }) => {
         setActiveTab(tab);
     };
     const addProductToCart = async (cartItem: CartItem) => {
+        try {
+            const token = localStorage.getItem('accessToken');
+           console.log(token);
+           
+            
+            const response = await axios.post(
+                `${import.meta.env.VITE_API_URL}cart/add`, 
+                cartItem,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            throw new Error('Lỗi khi thêm vào giỏ hàng');
+        }
     };
     const addToCartMutation = useMutation({
         mutationFn: addProductToCart,
@@ -70,6 +91,20 @@ const DetailProduct = ({ productId }: { productId: string }) => {
     if (error) return <div>Error loading product: {(error as Error).message}</div>;
     if (!product) return <div>Product not found</div>;
 
+    const handleAddToCart = () => {
+        if (!selectedSize) {
+            toast.error('Vui lòng chọn size!');
+            return;
+        }
+    
+        const cartItem: CartItem = {
+            productId: productId,
+            size: selectedSize,
+            quantity: quantity
+        };
+    
+        addToCartMutation.mutate(cartItem);
+    };
     return (
         <>
             <HeaderClient />
@@ -203,26 +238,16 @@ const DetailProduct = ({ productId }: { productId: string }) => {
 
                             {/* Action Buttons */}
                             <div className="flex gap-4 mb-20">
-                                <div
-                                    className={`my-4 text-lg font-semibold w-[174px] h-[48px] rounded-tl-[15px] rounded-br-[15px] flex justify-center items-center transition-all duration-300 ${isOutOfStock
-                                        ? 'bg-gray-400 text-white opacity-50 pointer-events-none'
-                                        : 'bg-black text-white hover:bg-white hover:text-black hover:border hover:border-black cursor-pointer'
-                                        }`}
-                                    onClick={() => {
-                                        if (!isOutOfStock && selectedSize) {
-                                            const cartItem: CartItem = {
-                                                id: productId,
-                                                size: selectedSize,
-                                                quantity: quantity,
-                                            };
-                                            addToCartMutation.mutate(cartItem);
-                                        } else if (!selectedSize) {
-                                            toast.error('Vui lòng chọn size!');
-                                        }
-                                    }}
-                                >
-                                    {isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ'}
-                                </div>
+                            <div
+    className={`my-4 text-lg font-semibold w-[174px] h-[48px] rounded-tl-[15px] rounded-br-[15px] flex justify-center items-center transition-all duration-300 ${
+        isOutOfStock
+            ? 'bg-gray-400 text-white opacity-50 pointer-events-none'
+            : 'bg-black text-white hover:bg-white hover:text-black hover:border hover:border-black cursor-pointer'
+    }`}
+    onClick={handleAddToCart}
+>
+    {isOutOfStock ? 'Hết hàng' : 'Thêm vào giỏ'}
+</div>
                                 <div
                                     className={`my-4 text-lg font-semibold w-[124px] h-[46px] rounded-tl-[15px] rounded-br-[15px] flex justify-center items-center transition-all duration-300 ${isOutOfStock
                                         ? 'bg-white text-gray-400 border border-gray-400 opacity-50 pointer-events-none'

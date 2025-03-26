@@ -32,3 +32,21 @@ export interface ISize {
     stock: number;
     _id?: string;
 }
+export type ListProducts = Pick<IProduct,"_id"|"name"| "sku" | "colors">
+
+export interface EditProductForm {
+    name: string;
+    sku: string;
+    colors: Color[];
+}
+
+export interface Color {
+    _id?: string;
+    colorName: string;
+    actualColor: string;
+}
+
+export interface DeleteProductParams {
+    id: string;
+    endpoint: string;
+}
